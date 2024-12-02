@@ -29,6 +29,14 @@ HTML_TEMPLATE = '''
             color: #333;
             text-align: center;
         }
+        .instructions {
+            color: #666;
+            margin: 20px 0;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+            border-left: 4px solid #4CAF50;
+        }
         textarea {
             width: 100%;
             height: 150px;
@@ -73,13 +81,23 @@ HTML_TEMPLATE = '''
             text-align: center;
             margin: 10px 0;
         }
+        #wordCount {
+            color: #666;
+            font-size: 0.9em;
+            margin-top: 5px;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>Greek Dialect Predictor</h1>
+        <div class="instructions">
+            Please put more than 20 words of the text you are interested in.<br>
+            The model is trained on Standard Greek, Cypriot, Pontic, Cretan and Northern Greek.
+        </div>
         <div>
-            <textarea id="text-input" placeholder="Enter Greek text here..."></textarea>
+            <textarea id="text-input" placeholder="Enter Greek text here (minimum 20 words)..." oninput="updateWordCount()"></textarea>
+            <div id="wordCount">Words: 0</div>
         </div>
         <button onclick="predict()">Predict Dialect</button>
         <div id="loading">Analyzing...</div>
@@ -87,13 +105,21 @@ HTML_TEMPLATE = '''
     </div>
 
     <script>
+        function updateWordCount() {
+            const text = document.getElementById('text-input').value;
+            const wordCount = text.trim().split(/\s+/).filter(word => word.length > 0).length;
+            document.getElementById('wordCount').textContent = `Words: ${wordCount}`;
+        }
+
         function predict() {
             const text = document.getElementById('text-input').value;
             const loading = document.getElementById('loading');
             const result = document.getElementById('result');
-
-            if (!text) {
-                showResult('Please enter some text', 'error');
+            
+            // Check for minimum word count
+            const wordCount = text.trim().split(/\s+/).filter(word => word.length > 0).length;
+            if (wordCount < 20) {
+                showResult('Please enter at least 20 words for accurate prediction', 'error');
                 return;
             }
 
