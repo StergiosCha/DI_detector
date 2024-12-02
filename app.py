@@ -1,10 +1,10 @@
 from flask import Flask, request, render_template_string, jsonify
 import joblib
 from pathlib import Path
+import os
 
 app = Flask(__name__)
 
-# HTML template
 HTML_TEMPLATE = '''
 <!DOCTYPE html>
 <html>
@@ -97,7 +97,6 @@ HTML_TEMPLATE = '''
                 return;
             }
 
-            // Show loading, hide previous result
             loading.style.display = 'block';
             result.style.display = 'none';
 
@@ -138,11 +137,27 @@ HTML_TEMPLATE = '''
 # Load model at startup
 try:
     print("Loading model...")
-    model = joblib.load('dialect_model.joblib')
-    vectorizer = joblib.load('vectorizer.joblib')
+    current_dir = Path(__file__).parent
+    print(f"Current directory: {current_dir}")
+    
+    # List all files in the directory and subdirectories
+    print("Files in directory:")
+    for file in current_dir.glob('**/*'):
+        print(f"Found file: {file}")
+    
+    model_path = current_dir / 'models' / 'dialect_model.joblib'
+    vectorizer_path = current_dir / 'models' / 'vectorizer.joblib'
+    
+    print(f"Looking for model at: {model_path}")
+    print(f"Looking for vectorizer at: {vectorizer_path}")
+    
+    model = joblib.load(model_path)
+    vectorizer = joblib.load(vectorizer_path)
     print("Model loaded successfully!")
 except Exception as e:
     print(f"Error loading model: {e}")
+    print(f"Current working directory: {Path.cwd()}")
+    print(f"Directory contents: {list(Path.cwd().glob('**/*.joblib'))}")
     model, vectorizer = None, None
 
 @app.route('/')
@@ -152,7 +167,7 @@ def home():
 @app.route('/predict', methods=['POST'])
 def predict():
     if not model or not vectorizer:
-        return jsonify({'error': 'Model not loaded'}), 500
+        return jsonify({'error': 'Model is still loading or failed to load. Please try again later.'}), 503
 
     try:
         text = request.json.get('text', '')
@@ -166,7 +181,9 @@ def predict():
         return jsonify({'dialect': dialect})
 
     except Exception as e:
+        print(f"Prediction error: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
-    app.run(debug=True, port=5001)
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port)
